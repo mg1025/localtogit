@@ -1,0 +1,74 @@
+---
+title: "Daum IT article Scraping"
+author: "LeeMinGyu"
+date: '2021 9 27 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+install.packages("rvest")
+install.packages("stringr")
+
+```{r}
+library(rvest) ; library(stringr)
+```
+```{r}
+title = c()
+
+press = c()
+time = c()
+body = c()
+url = c()
+
+url_base = "https://news.daum.net/breakingnews/digital?page="
+```
+# IT Article 1 ~ 15page
+```{r}
+for(i in 1:15){
+  
+  # Scraping
+  url_crawl = paste(url_base, i, sep="")
+  title_css = "#mArticle .tit_thumb .link_txt"
+  presstime_css = ".info_news"
+  body_css = ".desc_thumb .link_txt"
+
+  hdoc = read_html(url_crawl)
+  t_node = html_nodes(hdoc, title_css)
+  pt_node = html_nodes(hdoc, presstime_css)
+  b_node = html_nodes(hdoc, body_css)
+  
+  # 파싱 (불필요한 태그 제거)
+  title_part = html_text(t_node)
+  pt_part = html_text(pt_node)
+  body_part = html_text(b_node)
+  
+  # press와 time 분리
+  # body_part 공백 제거
+  press_part = str_sub(pt_part, end = -9)
+  time_part = str_sub(pt_part, start = -5)
+  body_part = gsub("\n","", body_part)
+  body_part1 = str_trim(body_part, side = "both")
+  
+  # 기사별 url
+  url_part = html_attr(t_node, "href")
+  
+  # 데이터를 각 객체에 저장
+  title = c(title, title_part)
+  press = c(press, press_part)
+  time = c(time, time_part)
+  body = c(body, body_part1)
+  url = c(url, url_part)
+}
+```
+# 테이블화
+```{r}
+news = cbind(title, press, time, body, url)
+View(news)
+write.csv(news, "C:\\stat511R\\crawl.csv")
+```
+
+
+
