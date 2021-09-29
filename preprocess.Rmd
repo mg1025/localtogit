@@ -1,0 +1,67 @@
+---
+title: "sparklyr_dplyr"
+author: "LeeMinGyu"
+date: '2021 9 29 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(sparklyr) ; library(dplyr)
+library(nycflights13) ; library(ggplot2)
+```
+
+```{r}
+sc = spark_connect(master = "local")
+flights = copy_to(sc, flights, "flights")
+airlines = copy_to(sc, airlines, "airlines")
+dplyr::src_tbls(sc)
+```
+colnames(flights)
+head(flights)
+
+# Select
+```{r}
+d1 = select(flights, year:day, arr_delay, dep_delay)
+```
+# Filter
+```{r}
+d2 = filter(flights, dep_delay > 1000)
+```
+# Arrange
+```{r}
+arrange(flights, desc(dep_delay))
+```
+# Summarise
+```{r}
+summarise(flights, mean_dep_delay = mean(dep_delay, na.rm = TRUE))
+```
+# Mutate
+```{r}
+d3 = mutate(flights, speed = distance / air_time * 60)
+```
+# Pipe
+```{r}
+d4 = flights %>% 
+  filter(month == 5, day == 17, carrier %in% c('UA', 'WN', 'AA', 'DL')) %>% 
+  select(carrier, dep_delay, air_time, distance) %>% 
+  arrange(carrier) %>% 
+  mutate(air_time_hours = air_time/60)
+```
+# Group
+```{r}
+d5 = flights %>% 
+  group_by(carrier) %>% 
+  summarise(count = n(), mean_dep_delay = mean(dep_delay))
+```
+# Spark -> memory of R
+```{r}
+carrierHours = collect(d4)
+
+with(carrierHours, pairwise.t.test(air_time, carrier))
+ggplot(carrierHours, aes(carrier, air_time_hours)) + geom_boxplot()
+```
+
